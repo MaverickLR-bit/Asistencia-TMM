@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencia TMM</title>
+    <link rel="shortcut icon" href="dk.ico" type="image/x-icon">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, arrayUnion, arrayRemove, getDoc, getDocs,
+        deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+     
+        // Configura tu proyecto de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOy5YgehQriKz6gmqJcMbFMPeJ-5kZjHo",
+            authDomain: "asistencia-tmm.firebaseapp.com",
+            projectId: "asistencia-tmm",
+            storageBucket: "asistencia-tmm.appspot.com",
+            messagingSenderId: "154893292278",
+            appId: "1:154893292278:web:8519d0b9083a93951fd2d7",
+            measurementId: "G-SLY43346PG",
+            databaseURL: "https://asistencia-tmm-default-rtdb.firebaseio.com"
+        };
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);      
+        
+       
+// Escucha los cambios en la colección "empleados"
+onSnapshot(collection(firestore, 'empleados'), (snapshot) => {
+    const section1Content = document.getElementById('section1-content');
+    section1Content.innerHTML = ''; // Limpiar contenido existente
+
+    snapshot.forEach((doc) => {
+        const empleado = doc.data();
+        const empleadoHTML = `
+            <div class="empleado" data-department="${empleado.departamento}">
+                <p>Número de Empleado: ${empleado.numero}</p>
+                <p>Nombre Completo: ${empleado.nombre}</p>
+                <p>Departamento: ${empleado.departamento}</p>
+                <p>Puesto: ${empleado.puesto}</p>
+                <p>Ingreso: ${empleado.Ingreso}</p>
+            </div>
+        `;
+        section1Content.innerHTML += empleadoHTML;
+    });
+
+    // Agregar evento clic a los botones de filtro por departamento
+    const filterButtons = document.querySelectorAll('.filter-button');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const department = this.getAttribute('data-department');
+            filterEmployeesByDepartment(department);
+        });
+    });
+});
+
+// Función para filtrar empleados por departamento
+function filterEmployeesByDepartment(department) {
+    const empleados = document.querySelectorAll('.empleado');
+    empleados.forEach(empleado => {
+        if (department === 'Todos' || empleado.getAttribute('data-department') === department) {
+            empleado.style.display = 'block';
+        } else {
+            empleado.style.display = 'none';
+        }
+    });
+}
+
+ async function guardarUsuario() {
+           // Agregamos el evento clic al botón para mostrar el formulario
+document.getElementById('btnguardar').addEventListener('click', async function(event) {
+    event.preventDefault(); // Prevenir el comportamiento predeterminado del botón (enviar el formulario)
+
+    // Obtener los valores de los campos del formulario
+    const numero = document.getElementById('numero').value.trim();
+    const nombre = document.getElementById('nombre').value.trim();
+    const departamento = document.getElementById('departamento').value.trim();
+    const puesto = document.getElementById('puesto').value.trim();
+    const Ingreso = document.getElementById('Ingreso').value.trim();
+
+    // Verificar si algún campo está vacío
+    if (numero === '' || nombre === '' || departamento === '' || puesto === '' || Ingreso === '') {
+        alert('Por favor, completa todos los campos del formulario.');
+        return; // Detener la ejecución de la función si algún campo está vacío
+    }
+
+    try {
+        await addDoc(collection(firestore, 'empleados'), { numero, nombre, departamento, puesto, Ingreso });
+        console.log("Usuario agregado correctamente a Firestore.");
+        
+    } catch (error) {
+        console.error("Error al agregar usuario a Firestore:", error);
+    }
+}); }
+ 
+        function mostrarFormulario() {
+            const overlay = document.getElementById('overlay');
+            const popup = document.getElementById('popup');
+            overlay.classList.add('visible');
+            popup.classList.add('visible');
+        }
+    
+        // Función para ocultar el formulario de agregar usuario
+        function ocultarFormulario() {
+            const overlay = document.getElementById('overlay');
+            const popup = document
+    .getElementById('popup');
+            overlay.classList.remove('visible');
+            popup.classList.remove('visible');
+        }
+    
+        // Agregamos el evento clic al botón para mostrar el formulario
+        document.getElementById('btnMostrarFormulario').addEventListener('click', mostrarFormulario);
+        document.getElementById('btnocultarFormulario').addEventListener('click', ocultarFormulario);
+    
+        // Agregamos el evento clic al botón para mostrar el formulario
+        document.getElementById('btnguardar').addEventListener('click', guardarUsuario); 
+
+        document.getElementById('btnincidencias').addEventListener('click', mostrarFormularioIncidencia);
+        document.getElementById('btnmostrarincidencias').addEventListener('click', ocultarFormularioIncidencia);
+   
+        document.getElementById('btnExportarExcel').addEventListener('click', exportarAExcel); 
+    
+        document.getElementById('btnExportarempleadoExcel').addEventListener('click', exportarEmpleadosAExcel); 
+
+// Evento de búsqueda para la sección 1
+document.getElementById('searchButton').addEventListener('click', function() {
+    const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+    const empleados = document.querySelectorAll('#section1 .empleado');
+    empleados.forEach(empleado => {
+        const nombre = empleado.querySelector('p:nth-child(2)').textContent.trim().toLowerCase();
+        const departamento = empleado.getAttribute('data-department').toLowerCase();
+        const puesto = empleado.querySelector('p:nth-child(4)').textContent.trim().toLowerCase();
+        if (nombre.includes(searchTerm) || departamento.includes(searchTerm) || puesto.includes(searchTerm)) {
+            empleado.style.display = 'block';
+        } else {
+            empleado.style.display = 'none';
+        }
+    });
+});
+
+// Botones de filtro para la sección 1
+document.querySelectorAll('#section1 .filter-button').forEach(button => {
+    button.addEventListener('click', function() {
+        const department = this.getAttribute('data-department');
+        const empleados = document.querySelectorAll('#section1 .empleado');
+        empleados.forEach(empleado => {
+            const empleadoDepartamento = empleado.getAttribute('data-department').toLowerCase();
+            if (department === 'Todos' || empleadoDepartamento === department.toLowerCase()) {
+                empleado.style.display = 'block';
+            } else {
+                empleado.style.display = 'none';
+            }
+        });
+    });
+});
+
+ // Función para agregar incidencia a un empleado
+ async function agregarIncidencia(numeroEmpleado, incidencia) {
+        try {
+            await updateDoc(doc(firestore, 'empleados', numeroEmpleado), {
+                incidencias: arrayUnion(incidencia)
+            });
+            alert("Incidencia agregada correctamente.");
+            ocultarFormularioIncidencia();
+        } catch (error) {
+            console.error("Error al agregar la incidencia:", error);
+        }
+    }
+
+// Función para mostrar el formulario de incidencia
+function mostrarFormularioIncidencia() {
+    const overlay = document.getElementById('overlay');
+    const popup = document.getElementById('incidentPopup');
+    overlay.classList.add('visible');
+    popup.classList.add('visible');
+
+    // Obtener la lista de empleados desde Firebase
+    const empleadosSelect = document.getElementById('empleadosSelect');
+    empleadosSelect.innerHTML = ''; // Limpiar la lista desplegable
+
+    onSnapshot(collection(firestore, 'empleados'), (snapshot) => {
+        snapshot.forEach((doc) => {
+            const empleado = doc.data();
+            const option = document.createElement('option');
+            option.value = empleado.numero;
+            option.textContent = `${empleado.numero} - ${empleado.nombre} (${empleado.departamento})`; // Agregamos el departamento
+            empleadosSelect.appendChild(option);
+        });
+    });
+
+    // Habilitar/deshabilitar campos de fecha de rango según checkbox
+    const rangoFechasCheckbox = document.getElementById('rangoFechas');
+    const fechaInput = document.getElementById('fecha');
+    const fechaInicioInput = document.getElementById('fechaInicio');
+    const fechaFinInput = document.getElementById('fechaFin');
+    
+    rangoFechasCheckbox.addEventListener('change', function() {
+        fechaInput.disabled = this.checked; // Deshabilitar fecha de incidencia si está marcado el rango de fechas
+        fechaInicioInput.disabled = !this.checked;
+        fechaFinInput.disabled = !this.checked;
+    });
+}
+
+// Función para ocultar el formulario de agregar incidencia
+function ocultarFormularioIncidencia() {
+    const overlay = document.getElementById('overlay');
+    const popup = document.getElementById('incidentPopup');
+    overlay.classList.remove('visible');
+    popup.classList.remove('visible');
+}
+
+// Función para guardar la incidencia en Firebase y relacionarla con el empleado
+async function guardarIncidencia(event) {
+    event.preventDefault(); // Prevenir el comportamiento predeterminado del formulario
+
+    const empleadoSeleccionado = document.getElementById('empleadosSelect').value;
+    let fecha = null; // Definir fecha como null por defecto
+    let fechaInicio = null;
+    let fechaFin = null;
+
+    // Si se ha marcado el rango de fechas, tomar las fechas de inicio y fin
+    if (document.getElementById('rangoFechas').checked) {
+        fechaInicio = document.getElementById('fechaInicio').value;
+        fechaFin = document.getElementById('fechaFin').value;
+    } else {
+        fecha = document.getElementById('fecha').value;
+    }
+
+    const Clave = document.getElementById('Clave').value;
+    const Comentarios = document.getElementById('Comentarios').value;
+
+    try {
+        await addDoc(collection(firestore, 'incidencias'), {
+            empleado: empleadoSeleccionado,
+            fecha: fecha,
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin,
+            Clave: Clave,
+            Comentarios: Comentarios
+        });
+        alert("Incidencia guardada correctamente.");
+        ocultarFormularioIncidencia();
+    } catch (error) {
+        console.error("Error al guardar la incidencia:", error);
+    }
+}
+
+// Agregar evento clic al botón "Guardar" en el formulario de incidencias
+document.getElementById('incidentForm').addEventListener('submit', guardarIncidencia);
+
+async function exportarAExcel() {
+    try {
+        // Paso 1: Obtener los datos de Firebase
+        const querySnapshot = await getDocs(collection(firestore, 'incidencias'));
+        const incidencias = [];
+        const empleadosSnapshot = await getDocs(collection(firestore, 'empleados'));
+        const empleadosMap = new Map();
+        empleadosSnapshot.forEach((doc) => {
+            const empleado = doc.data();
+            empleadosMap.set(empleado.numero, empleado); // Relacionar número de empleado con objeto de empleado
+        });
+        querySnapshot.forEach((doc) => {
+            const incidencia = doc.data();
+            const empleado = empleadosMap.get(incidencia.empleado); // Obtener el empleado correspondiente
+
+            // Formatear la fecha o el rango de fechas
+            let fechaInfo = '';
+            if (incidencia.fechaInicio && incidencia.fechaFin) {
+                fechaInfo = `${incidencia.fechaInicio} - ${incidencia.fechaFin}`;
+            } else if (incidencia.fecha) {
+                fechaInfo = incidencia.fecha;
+            }
+
+            incidencias.push({
+                ...incidencia,
+                nombre: empleado.nombre,
+                fecha: fechaInfo,
+                departamento: empleado.departamento // Agregar el departamento
+            }); // Agregar el nombre del empleado, el formato de fecha y el departamento a los datos de la incidencia
+        });
+
+        // Paso 2: Formatear los datos
+        const data = incidencias.map(incidencia => [incidencia.empleado, incidencia.nombre, incidencia.fecha, incidencia.Clave, incidencia.Comentarios, incidencia.departamento]); // Agregar departamento al array
+
+        // Paso 3: Crear un nuevo libro de Excel
+        const wb = XLSX.utils.book_new();
+
+        // Paso 4: Crear una hoja de Excel
+        const ws = XLSX.utils.aoa_to_sheet([]);
+
+        // Paso 5: Agregar nombres de columnas si la hoja está vacía
+        if (Object.keys(ws).length === 0) {
+            const header = ["ID", "Nombre", "Fecha", "Clave", "Comentarios", "Departamento"]; // Agregar "Departamento"
+            XLSX.utils.sheet_add_aoa(ws, [header], { origin: "A1" }); // Agregar nombres de columna
+
+            // Estilos para las celdas del encabezado
+            const headerStyle = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFFF00" } }
+            };
+            const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell = XLSX.utils.encode_cell({ r: 0, c: C });
+                ws[cell].s = headerStyle; // Aplicar estilo al encabezado
+            }
+        }
+
+        // Paso 6: Obtener el siguiente índice de fila disponible
+        const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+        const nextRowIndex = range.e.r + 1;
+
+        // Paso 7: Agregar los datos debajo de los encabezados
+        XLSX.utils.sheet_add_aoa(ws, data, { origin: { r: nextRowIndex, c: 0 } });
+
+        // Paso 8: Agregar la hoja al libro
+        XLSX.utils.book_append_sheet(wb, ws, "Incidencias");
+
+        // Paso 9: Guardar el libro de Excel
+        XLSX.writeFile(wb, "incidencias.xlsx");
+
+    } catch (error) {
+        console.error("Error al exportar a Excel:", error);
+    }
+}
+
+document.getElementById('btnImportar').addEventListener('click', async function() {
+    const fileInput = document.getElementById('inputFile');
+    const file = fileInput.files[0]; // Obtener el archivo seleccionado por el usuario
+
+    if (!file) {
+        alert('Por favor, seleccione un archivo.');
+        return;
+    }
+
+    // Crear un lector de archivos
+    const reader = new FileReader();
+
+    // Configurar el evento onload del lector de archivos
+    reader.onload = async function(event) {
+        try {
+            const data = new Uint8Array(event.target.result); // Obtener los datos binarios del archivo
+
+            // Leer el archivo Excel
+            const workbook = XLSX.read(data, {
+                type: 'array',
+                dateNF: 'dd/mm/yyyy' // Especificar el formato de fecha para asegurar una correcta interpretación
+            });
+            const sheetName = workbook.SheetNames[0]; // Suponiendo que solo hay una hoja en el archivo
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Convertir el contenido del archivo Excel en formato JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+
+            // Procesar los datos y guardarlos en Firestore
+            for (const empleado of jsonData) {
+                try {
+                    // Agregar el empleado a la colección "empleados" en Firestore
+                    await addDoc(collection(firestore, 'empleados'), empleado);
+                    console.log('Empleado agregado:', empleado);
+                } catch (error) {
+                    console.error('Error al agregar empleado:', error);
+                }
+            }
+
+            alert('Importación completada.');
+        } catch (error) {
+            console.error('Error al importar desde Excel:', error);
+            alert('Error al importar desde Excel.');
+        }
+    };
+
+    // Leer el contenido del archivo como datos binarios
+    reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('btnEliminarEmpleado').addEventListener('click', async function() {
+    await cargarListaEmpleados(); // Cargar la lista de empleados al hacer clic en el botón
+});
+
+// Función para cargar la lista de empleados en el select
+async function cargarListaEmpleadosEliminar() {
+    const selectEmpleadoEliminar = document.getElementById('selectEmpleadoEliminar');
+    selectEmpleadoEliminar.innerHTML = ''; // Limpiar la lista desplegable
+
+    try {
+        const querySnapshot = await getDocs(collection(firestore, 'empleados'));
+        querySnapshot.forEach((doc) => {
+            const empleado = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id; // Usar el ID del documento como valor del option
+            option.textContent = `${empleado.numero} - ${empleado.nombre}`;
+            selectEmpleadoEliminar.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error al cargar la lista de empleados:', error);
+        alert('Error al cargar la lista de empleados.');
+    }
+}
+
+// Agregar evento clic al botón "Eliminar Empleado"
+document.getElementById('btnEliminarEmpleado').addEventListener('click', async function() {
+    // Cargar la lista de empleados antes de mostrar la ventana emergente
+    await cargarListaEmpleadosEliminar();
+
+    // Mostrar la ventana emergente
+    document.getElementById('eliminarEmpleadoPopup').classList.add('visible');
+});
+
+// Agregar evento clic al botón "Cancelar" de la ventana emergente
+document.getElementById('btnCancelarEliminarEmpleado').addEventListener('click', function() {
+    // Ocultar la ventana emergente al hacer clic en "Cancelar"
+    document.getElementById('eliminarEmpleadoPopup').classList.remove('visible');
+});
+
+// Agregar evento clic al botón "Eliminar" de la ventana emergente
+document.getElementById('btnConfirmarEliminarEmpleado').addEventListener('click', async function() {
+    const selectedEmpleadoId = document.getElementById('selectEmpleadoEliminar').value;
+
+    if (!selectedEmpleadoId) {
+        alert('Por favor, seleccione un empleado.');
+        return;
+    }
+
+    const confirmacion = confirm('¿Está seguro de que desea eliminar este empleado?');
+
+    if (!confirmacion) return; // Salir si el usuario cancela la operación
+
+    try {
+        await deleteDoc(doc(firestore, 'empleados', selectedEmpleadoId)); // Eliminar el empleado
+        alert('Empleado eliminado correctamente.');
+        // Ocultar la ventana emergente después de eliminar el empleado
+        document.getElementById('eliminarEmpleadoPopup').classList.remove('visible');
+    } catch (error) {
+        console.error('Error al eliminar empleado:', error);
+        alert('Error al eliminar empleado.');
+    }
+});
+
+// Escucha los cambios en la colección "incidencias"
+onSnapshot(collection(firestore, 'incidencias'), async (snapshot) => {
+    const section2Content = document.getElementById('section2-content');
+    section2Content.innerHTML = ''; // Limpiar contenido existente
+
+    // Obtener la lista de empleados para relacionar el nombre con el número de empleado y el departamento
+    const empleadosSnapshot = await getDocs(collection(firestore, 'empleados'));
+    const empleadosMap = new Map();
+    empleadosSnapshot.forEach((doc) => {
+        const empleado = doc.data();
+        empleadosMap.set(empleado.numero, { nombre: empleado.nombre, departamento: empleado.departamento }); // Relacionar número de empleado con nombre y departamento
+    });
+
+    snapshot.forEach((doc) => {
+        const incidencia = doc.data();
+        const nombreEmpleado = empleadosMap.get(incidencia.empleado).nombre; // Obtener el nombre del empleado
+        const departamentoEmpleado = empleadosMap.get(incidencia.empleado).departamento; // Obtener el departamento del empleado
+
+        let fechaHTML = '';
+        if (incidencia.fecha) {
+            fechaHTML = `<p>Fecha: ${incidencia.fecha}</p>`;
+        } else if (incidencia.fechaInicio && incidencia.fechaFin) {
+            fechaHTML = `<p>Rango de Fechas: ${incidencia.fechaInicio} - ${incidencia.fechaFin}</p>`;
+        }
+
+        const incidenciaHTML = `
+            <div class="empleado" data-department="${departamentoEmpleado}">
+                <p>Nombre: ${nombreEmpleado}</p>
+                <p>Número de Empleado: ${incidencia.empleado}</p>
+                <p>Departamento: ${departamentoEmpleado}</p>
+                ${fechaHTML}
+                <p>Clave: ${incidencia.Clave}</p>
+                <p>Comentarios: ${incidencia.Comentarios}</p>
+            </div>
+        `;
+        section2Content.innerHTML += incidenciaHTML;
+    });
+
+});
+
+// Función para filtrar empleados por departamento
+function filterEmployeesByDepartments(department) {
+    const empleados = document.querySelectorAll('.empleado');
+    empleados.forEach(empleado => {
+        if (department === 'Todos' || empleado.getAttribute('data-department') === department) {
+            empleado.style.display = 'block';
+        } else {
+            empleado.style.display = 'none';
+        }
+    });
+}
+
+
+firebase.initializeApp(firebaseConfig);
+
+// Evento clic en el botón de cierre de sesión
+document.getElementById('logout-button').addEventListener('click', function() {
+    firebase.auth().signOut().then(function() {
+        // Cierre de sesión exitoso
+        console.log('Cierre de sesión exitoso');
+        // Redirigir a la página de inicio de sesión u otra página
+        window.location.href = 'index.html'; // Cambia 'login.html' por la ruta de tu página de inicio de sesión
+    }).catch(function(error) {
+        // Error al cerrar sesión
+        console.error('Error al cerrar sesión:', error);
+    });
+});
+
+// Función para cargar la lista de incidencias en el select
+async function cargarListaIncidencias() {
+    const selectIncidencia = document.getElementById('selectIncidenciaEliminar');
+    selectIncidencia.innerHTML = ''; // Limpiar la lista desplegable
+
+    try {
+        const querySnapshot = await getDocs(collection(firestore, 'incidencias'));
+        querySnapshot.forEach((doc) => {
+            const incidencia = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id; // Usar el ID del documento como valor del option
+            option.textContent = `${incidencia.fecha} - ${incidencia.Clave} - ${incidencia.Comentarios}`;
+            selectIncidencia.appendChild(option);
+        });
+        selectIncidencia.style.display = 'block'; // Mostrar la lista desplegable
+    } catch (error) {
+        console.error('Error al cargar la lista de incidencias:', error);
+        alert('Error al cargar la lista de incidencias.');
+    }
+}
+
+// Agregar evento clic al botón "Eliminar Incidencia"
+document.getElementById('btnEliminarIncidencia').addEventListener('click', async function() {
+    // Cargar la lista de incidencias antes de mostrar la ventana emergente
+    await cargarListaIncidencias();
+
+    // Mostrar la ventana emergente
+    document.getElementById('eliminarIncidenciaPopup').classList.add('visible');
+});
+
+// Agregar evento clic al botón "Cancelar" de la ventana emergente de eliminación de incidencias
+document.getElementById('btnCancelarEliminarIncidencia').addEventListener('click', function() {
+    // Ocultar la ventana emergente al hacer clic en "Cancelar"
+    document.getElementById('eliminarIncidenciaPopup').classList.remove('visible');
+});
+
+// Agregar evento clic al botón "Eliminar" de la ventana emergente de eliminación de incidencias
+document.getElementById('btnConfirmarEliminarIncidencia').addEventListener('click', async function() {
+    const selectedIncidenciaId = document.getElementById('selectIncidenciaEliminar').value;
+
+    if (!selectedIncidenciaId) {
+        alert('Por favor, seleccione una incidencia.');
+        return;
+    }
+
+    const confirmacion = confirm('¿Está seguro de que desea eliminar esta incidencia?');
+
+    if (!confirmacion) return; // Salir si el usuario cancela la operación
+
+    try {
+        await deleteDoc(doc(firestore, 'incidencias', selectedIncidenciaId)); // Eliminar la incidencia
+        alert('Incidencia eliminada correctamente.');
+        // Ocultar la ventana emergente después de eliminar la incidencia
+        document.getElementById('eliminarIncidenciaPopup').classList.remove('visible');
+    } catch (error) {
+        console.error('Error al eliminar incidencia:', error);
+        alert('Error al eliminar incidencia.');
+    }
+});
+
+async function exportarEmpleadosAExcel() {
+    try {
+        // Paso 1: Obtener los datos de Firebase
+        const empleadosSnapshot = await getDocs(collection(firestore, 'empleados'));
+        const empleados = [];
+
+        empleadosSnapshot.forEach((doc) => {
+            const empleado = doc.data();
+            empleados.push([empleado.numero, empleado.nombre, empleado.departamento, empleado.puesto, empleado.Ingreso]); // Ajusta los campos según la estructura de tus datos
+        });
+
+        // Paso 2: Crear un nuevo libro de Excel
+        const wb = XLSX.utils.book_new();
+
+        // Paso 3: Crear una hoja de Excel
+        const ws = XLSX.utils.aoa_to_sheet([]);
+
+        // Paso 4: Agregar nombres de columnas si la hoja está vacía
+        if (Object.keys(ws).length === 0) {
+            const header = ["Número", "Nombre", "Departamento", "Puesto", "Ingreso"]; // Ajusta los nombres de columna según tus datos
+            XLSX.utils.sheet_add_aoa(ws, [header], { origin: "A1" }); // Agregar nombres de columna
+
+            // Estilos para las celdas del encabezado
+            const headerStyle = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFFF00" } }
+            };
+            const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell = XLSX.utils.encode_cell({ r: 0, c: C });
+                ws[cell].s = headerStyle; // Aplicar estilo al encabezado
+            }
+        }
+
+        // Paso 5: Obtener el siguiente índice de fila disponible
+        const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+        const nextRowIndex = range.e.r + 1;
+
+        // Paso 6: Agregar los datos debajo de los encabezados
+        XLSX.utils.sheet_add_aoa(ws, empleados, { origin: { r: nextRowIndex, c: 0 } });
+
+        // Paso 7: Agregar la hoja al libro
+        XLSX.utils.book_append_sheet(wb, ws, "Empleados");
+
+        // Paso 8: Guardar el libro de Excel
+        XLSX.writeFile(wb, "empleados.xlsx");
+
+    } catch (error) {
+        console.error("Error al exportar a Excel:", error);
+    }
+}
+</script>
+
+<style>
+    /* Estilos generales */
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-image: url('camion.jpg');
+        background-size: cover; /* Para cubrir todo el fondo */
+        background-position: center; /* Para centrar la imagen */
+        color: #fff;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    /* Estilos de la barra superior */
+    .top-bar {
+            background-color: #FFA500;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-bar img {
+            width: 100px;
+            height: 50px;
+        }
+        /* Estilo para el botón "Cerrar sesión" */
+        #logout-button {
+            background-color: #DB4437;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px; /* Añadimos un margen a la derecha para separarlo del logo */
+        }
+        #logout-button:hover {
+            background-color: #FF8C00;
+        }
+    /* Estilos de las secciones */
+    .section {
+        margin-bottom: 30px;
+        background-color: #222;
+        border-radius: 5px;
+        padding: 10px;
+    }
+    .section-header {
+        background-color: #FFA500;
+        padding: 10px;
+        border-radius: 5px 5px 0 0;
+    }
+    .section-content {
+        padding: 20px;
+    }
+  /* Estilos de las secciones */
+.section-content {
+padding: 20px;
+max-height: 300px; /* Altura máxima de la sección */
+overflow-y: auto; /* Habilitar la barra de desplazamiento vertical */
+}
+
+    .search-input {
+        width: calc(100% - 80px);
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px 0 0 5px;
+        background-color: #333;
+        color: #fff;
+    }
+    .search-button {
+        width: 80px;
+        padding: 10px;
+        border: none;
+        border-radius: 0 5px 5px 0;
+        background-color: #FFA500;
+        color: #fff;
+        cursor: pointer;
+    }
+    .search-button:hover {
+        background-color: #FF8C00;
+    }
+    /* Estilos de los empleados */
+    .empleado {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #333;
+    }
+    .empleado p {
+        color: #fff;
+        margin: 5px 0;
+    }
+    /* Estilos del formulario emergente */
+    .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #222;
+        color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 1000;
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.5s;
+    }
+    .popup.visible {
+        visibility: visible;
+        opacity: 1;
+    }
+    /* Estilos del overlay */
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.5s;
+    }
+    .overlay.visible {
+        visibility: visible;
+        opacity: 1;
+    }
+    .btn-text-right{
+        text-align: right;
+        }
+
+</style>
+
+
+</head>
+<body>
+   
+    <div class="top-bar">
+        <img src="logo.png" alt="Logo">
+        <h2><span id="user-name" align="center"></span></h2>
+        <div class="btn-text-right">
+            <button type="button" class="btn btn-primary" id="logout-button">Cerrar sesión</button>
+        </div>
+    </div>
+    
+    <!-- Contenedor principal -->
+    <div class="container">
+        <!-- Botón para abrir el formulario -->
+        <button id="btnMostrarFormulario">Agregar Usuario</button>
+    
+        <!-- Botón para abrir la ventana emergente de eliminación de empleado -->
+        <button id="btnEliminarEmpleado">Eliminar Empleado</button>
+    
+        <!-- Ventana emergente para seleccionar el empleado a eliminar -->
+        <div class="popup" id="eliminarEmpleadoPopup">
+            <h2>Seleccionar Empleado a Eliminar</h2>
+            <select id="selectEmpleadoEliminar"></select>
+            <button id="btnConfirmarEliminarEmpleado">Eliminar</button>
+            <button id="btnCancelarEliminarEmpleado">Cancelar</button>
+        </div>
+        <input type="file" id="inputFile" accept=".xlsx">
+        <button id="btnImportar">Exportar a Excel</button>
+        <button id="btnExportarempleadoExcel">Importar a Excel</button>
+        <br><br>
+<!-- Sección 1 con buscador y filtros -->
+<div class="section" id="section1">
+    <div class="section-header">
+        <h2>Plantilla</h2>
+        <!-- Buscador -->
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Buscar..." id="searchInput">
+            <button class="search-button" id="searchButton">Buscar</button>
+        </div>
+        <!-- Botones de filtro por departamento -->
+        <div>
+            <button class="filter-button" id="filterButton1Todos" data-department="Todos">Todos</button>
+            <button class="filter-button" id="filterButton1Calidad" data-department="Calidad">Calidad</button>
+            <button class="filter-button" id="filterButton1Montaje" data-department="Montaje">Montaje</button>
+            <button class="filter-button" id="filterButton1RecursosHumanos" data-department="Recursos Humanos">Recursos Humanos</button>
+            <button class="filter-button" id="filterButton1Operaciones" data-department="Operaciones">Operaciones</button>
+            <button class="filter-button" id="filterButton1Materiales" data-department="Materiales">Materiales</button>
+            <button class="filter-button" id="filterButton1TI" data-department="TI">Sistemas</button>
+            <button class="filter-button" id="filterButton1Contabilidad" data-department="Contabilidad">Contabilidad</button>
+        </div>
+    </div>
+    <div class="section-content" id="section1-content">
+        <!-- Los datos de los empleados se mostrarán aquí -->
+    </div>
+</div>        <!-- Contenido del formulario de agregar incidencia -->
+        <button id="btnincidencias">Agregar Incidencia</button>
+        <button id="btnExportarExcel">Importar a Excel</button>
+        <!-- Botón para abrir la ventana emergente -->
+        <!-- Botón para abrir la ventana emergente de eliminación de incidencias -->
+        <button id="btnEliminarIncidencia">Eliminar Incidencia</button>
+        <!-- Ventana emergente para seleccionar la incidencia a eliminar -->
+        <div class="popup" id="eliminarIncidenciaPopup">
+            <h2>Seleccionar Incidencia a Eliminar</h2>
+            <select id="selectIncidenciaEliminar"></select>
+            <button id="btnConfirmarEliminarIncidencia">Eliminar</button>
+            <button id="btnCancelarEliminarIncidencia">Cancelar</button>
+        </div>
+        <br><br>
+    
+<!-- Sección para mostrar personas con incidencias -->
+<div class="section" id="section2">
+    <div class="section-header">
+        <h2>Personas con Incidencias</h2>
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Buscar..." id="searchInput2">
+            <button class="search-button" id="searchButton2">Buscar</button>
+        </div>
+        <!-- Botones de filtro por departamento -->
+    </div>
+    <div class="section-content" id="section2-content">
+        <!-- Aquí se mostrarán las personas con incidencias -->
+    </div>
+</div>
+        <div class="popup" id="popup">
+            <h2>Agregar Usuario</h2>
+            <form id="formulario" onsubmit="return false;">
+                <label for="numero">Número de Empleado:</label><br>
+                <input type="text" id="numero" name="numero" required><br>
+                <label for="nombre">Nombre Completo:</label><br>
+                <input type="text" id="nombre" name="nombre" required><br>
+                <label for="departamento">Departamento:</label><br>
+                <input type="text" id="departamento" name="departamento" required><br>
+                <label for="puesto">Puesto:</label><br>
+                <input type="text" id="puesto" name="puesto" required><br>
+                <label for="Ingreso">Fecha de Ingreso:</label><br>
+        <input type="date" id="Ingreso" name="Ingreso" required><br><br>
+                <button id="btnguardar">Guardar</button>
+                <button id="btnocultarFormulario">Cerrar</button>
+            </form>
+        </div>
+        </div>
+ 
+<!-- Ajustes en el formulario de incidencia -->
+<div class="popup" id="incidentPopup">
+    <h2>Agregar Incidencia</h2>
+    <form id="incidentForm">
+        <label for="empleadosSelect">Seleccionar empleado:</label><br>
+        <select id="empleadosSelect"></select><br>
+        <label for="fecha">Fecha de Incidencia:</label><br>
+        <input type="date" id="fecha" name="fecha" required><br>
+        <input type="checkbox" id="rangoFechas" name="rangoFechas">
+        <label for="rangoFechas">Rango de fechas</label><br>
+        <label for="fechaInicio">Fecha Inicio:</label><br>
+        <input type="date" id="fechaInicio" name="fechaInicio" disabled><br>
+        <label for="fechaFin">Fecha Fin:</label><br>
+        <input type="date" id="fechaFin" name="fechaFin" disabled><br>
+        <label for="Clave">Clave de incidencias:</label><br>
+        <select id="Clave" required>
+            <option value="A">(A)-ASISTENCIA</option>
+            <option value="S">(S)-SUSPENSION</option>
+            <option value="AP">(AP)-ASISTENCIA PATIO</option>
+            <option value="F">(F)-FALTA</option>
+            <option value="FJ">(FJ)-FALTA JUSTIFICADA</option>
+            <option value="-D">(-D)-RETARDO O TIEMPO A DEBER (EJEMPLO: -1.15)</option>
+            <option value="+D">(+D)-TIEMPO EXTRA (EJEMPLO: +8)</option>
+            <option value="V">(V)-VACACIONES</option>
+            <option value="PPP">(PPP)-PERMISO POR PATERNIDAD</option>
+            <option value="PSG">(PSG)-PERMISO SIN GOCE</option>
+            <option value="C">(C)-ACCIDENTE</option>
+            <option value="ASU">(ASU)-ASUETO</option>
+            <option value="PCM">(PCM)-PERMISO CAUSA MAYOR</option>
+            <option value="TXT">(TXT)-TIEMPO POR TIEMPO</option>
+            <option value="B">(B)-BAJA</option>
+            <option value="I">(I)-INCAPACIDAD</option>
+            <option value="CA">(CA)-CAMBIO DE AREA</option>
+            <option value="F.I.">(F.I)-FECHA DE INGRESO</option>
+            <option value="AP">(AP)-ASISTENCIA PATIO EXTERNO</option>
+            <option value="PPF">(PPF)-PERMISO POR FALLECIMIENTO</option>
+            <option value="PPN">(PPN)-PERMISO POR NACIMIENTO</option>
+            <option value="IC">(IC)-INCAPACIDAD COVID</option>
+            <option value="PSP">(PSP)-PERMISO SALIDA PLANTA</option>
+        </select><br>
+        <label for="Comentarios">Comentarios:</label><br>
+        <textarea id="Comentarios" name="Comentarios" rows="4" cols="50" required></textarea><br><br>
+        <button type="submit">Guardar</button>
+        <button type="button" id="btnmostrarincidencias">Cerrar</button>
+    </form>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+</div>
+
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+</html>

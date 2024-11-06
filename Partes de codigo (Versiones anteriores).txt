@@ -1,0 +1,239 @@
+    /*function mostrarFormularioIncidencia() {
+    const overlay = document.getElementById('overlay');
+    const popup = document.getElementById('incidentPopup');
+    overlay.classList.add('visible');
+    popup.classList.add('visible');
+
+    // Obtener la lista de empleados desde Firebase
+    const empleadosSelect = document.getElementById('empleadosSelect');
+    empleadosSelect.innerHTML = ''; // Limpiar la lista desplegable
+
+    onSnapshot(collection(firestore, 'empleados'), (snapshot) => {
+        snapshot.forEach((doc) => {
+            const empleado = doc.data();
+            const option = document.createElement('option');
+            option.value = empleado.numero;
+            option.textContent = `${empleado.numero} - ${empleado.nombre}`;
+            empleadosSelect.appendChild(option);
+        });
+    });
+}
+    // Función para ocultar el formulario de agregar incidencia
+    function ocultarFormularioIncidencia() {
+        const overlay = document.getElementById('overlay');
+        const popup = document.getElementById('incidentPopup');
+        overlay.classList.remove('visible');
+        popup.classList.remove('visible');
+    }
+
+// Función para guardar la incidencia en Firebase y relacionarla con el empleado
+async function guardarIncidencia() {
+    const empleadoSeleccionado = document.getElementById('empleadosSelect').value;
+    const fecha = document.getElementById('fecha').value;
+    const Clave = document.getElementById('Clave').value;
+    const Comentarios = document.getElementById('Comentarios').value;
+
+    try {
+        await addDoc(collection(firestore, 'incidencias'), {
+            empleado: empleadoSeleccionado,
+            fecha: fecha,
+            Clave: Clave,
+            Comentarios: Comentarios
+        });
+        alert("Incidencia guardada correctamente.");
+        ocultarFormularioIncidencia();
+    } catch (error) {
+        console.error("Error al guardar la incidencia:", error);
+    }
+}
+// Agregar evento clic al botón "Guardar" en el formulario de incidencias
+document.getElementById('incidentForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevenir el comportamiento predeterminado del formulario
+    guardarIncidencia();
+}); */
+
+
+
+/*async function exportarAExcel() {
+    try {
+    
+// Paso 1: Obtener los datos de Firebase
+const querySnapshot = await getDocs(collection(firestore, 'incidencias'));
+const incidencias = [];
+const empleadosSnapshot = await getDocs(collection(firestore, 'empleados'));
+const empleadosMap = new Map();
+empleadosSnapshot.forEach((doc) => {
+    const empleado = doc.data();
+    empleadosMap.set(empleado.numero, empleado.nombre); // Relacionar número de empleado con nombre
+});
+querySnapshot.forEach((doc) => {
+    const incidencia = doc.data();
+    const nombreEmpleado = empleadosMap.get(incidencia.empleado); // Obtener el nombre del empleado
+    incidencias.push({...incidencia, nombre: nombreEmpleado}); // Agregar el nombre del empleado a los datos de la incidencia
+});
+
+// Paso 2: Formatear los datos
+const data = incidencias.map(incidencia => [incidencia.empleado, incidencia.nombre, incidencia.fecha, incidencia.Clave, incidencia.Comentarios]);
+
+// Paso 3: Crear un nuevo libro de Excel
+const wb = XLSX.utils.book_new();
+
+        // Paso 4: Crear una hoja de Excel
+        const ws = XLSX.utils.aoa_to_sheet([]);
+
+        // Paso 5: Agregar nombres de columnas si la hoja está vacía
+        if (Object.keys(ws).length === 0) {
+            const header = ["ID","Nombre", "Fecha", "Clave", "Comentarios"];
+            XLSX.utils.sheet_add_aoa(ws, [header], { origin: "A1" }); // Agregar nombres de columna
+
+            // Estilos para las celdas del encabezado
+            const headerStyle = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFFF00" } }
+            };
+            const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell = XLSX.utils.encode_cell({ r: 0, c: C });
+                ws[cell].s = headerStyle; // Aplicar estilo al encabezado
+            }
+        }
+
+        // Paso 6: Obtener el siguiente índice de fila disponible
+        const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+        const nextRowIndex = range.e.r + 1;
+
+        // Paso 7: Agregar los datos debajo de los encabezados
+        XLSX.utils.sheet_add_aoa(ws, data, { origin: { r: nextRowIndex, c: 0 } });
+
+        // Paso 8: Agregar la hoja al libro
+        XLSX.utils.book_append_sheet(wb, ws, "Incidencias");
+
+        // Paso 9: Guardar el libro de Excel
+        XLSX.writeFile(wb, "incidencias.xlsx");
+
+    } catch (error) {
+        console.error("Error al exportar a Excel:", error);
+    }
+}*/
+
+/*async function exportarAExcel() {
+    try {
+        // Paso 1: Obtener los datos de Firebase
+        const querySnapshot = await getDocs(collection(firestore, 'incidencias'));
+        const incidencias = [];
+        const empleadosSnapshot = await getDocs(collection(firestore, 'empleados'));
+        const empleadosMap = new Map();
+        empleadosSnapshot.forEach((doc) => {
+            const empleado = doc.data();
+            empleadosMap.set(empleado.numero, empleado.nombre); // Relacionar número de empleado con nombre
+        });
+        querySnapshot.forEach((doc) => {
+            const incidencia = doc.data();
+            const nombreEmpleado = empleadosMap.get(incidencia.empleado); // Obtener el nombre del empleado
+
+            // Formatear la fecha o el rango de fechas
+            let fechaInfo = '';
+            if (incidencia.fechaInicio && incidencia.fechaFin) {
+                fechaInfo = `${incidencia.fechaInicio} - ${incidencia.fechaFin}`;
+            } else if (incidencia.fecha) {
+                fechaInfo = incidencia.fecha;
+            }
+
+            incidencias.push({
+                ...incidencia,
+                nombre: nombreEmpleado,
+                fecha: fechaInfo
+            }); // Agregar el nombre del empleado y el formato de fecha a los datos de la incidencia
+        });
+
+        // Paso 2: Formatear los datos
+        const data = incidencias.map(incidencia => [incidencia.empleado, incidencia.nombre, incidencia.fecha, incidencia.Clave, incidencia.Comentarios]);
+
+        // Paso 3: Crear un nuevo libro de Excel
+        const wb = XLSX.utils.book_new();
+
+        // Paso 4: Crear una hoja de Excel
+        const ws = XLSX.utils.aoa_to_sheet([]);
+
+        // Paso 5: Agregar nombres de columnas si la hoja está vacía
+        if (Object.keys(ws).length === 0) {
+            const header = ["ID", "Nombre", "Fecha", "Clave", "Comentarios"];
+            XLSX.utils.sheet_add_aoa(ws, [header], { origin: "A1" }); // Agregar nombres de columna
+
+            // Estilos para las celdas del encabezado
+            const headerStyle = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFFF00" } }
+            };
+            const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell = XLSX.utils.encode_cell({ r: 0, c: C });
+                ws[cell].s = headerStyle; // Aplicar estilo al encabezado
+            }
+        }
+
+        // Paso 6: Obtener el siguiente índice de fila disponible
+        const range = XLSX.utils.decode_range(ws['!ref']); // Obtener el rango de celdas
+        const nextRowIndex = range.e.r + 1;
+
+        // Paso 7: Agregar los datos debajo de los encabezados
+        XLSX.utils.sheet_add_aoa(ws, data, { origin: { r: nextRowIndex, c: 0 } });
+
+        // Paso 8: Agregar la hoja al libro
+        XLSX.utils.book_append_sheet(wb, ws, "Incidencias");
+
+        // Paso 9: Guardar el libro de Excel
+        XLSX.writeFile(wb, "incidencias.xlsx");
+
+    } catch (error) {
+        console.error("Error al exportar a Excel:", error);
+    }
+}*/
+
+/*document.getElementById('btnImportar').addEventListener('click', async function() {
+    const fileInput = document.getElementById('inputFile');
+    const file = fileInput.files[0]; // Obtener el archivo seleccionado por el usuario
+
+    if (!file) {
+        alert('Por favor, seleccione un archivo.');
+        return;
+    }
+
+    // Crear un lector de archivos
+    const reader = new FileReader();
+
+    // Configurar el evento onload del lector de archivos
+    reader.onload = async function(event) {
+        try {
+            const data = new Uint8Array(event.target.result); // Obtener los datos binarios del archivo
+
+            // Leer el archivo Excel
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0]; // Suponiendo que solo hay una hoja en el archivo
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Convertir el contenido del archivo Excel en formato JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            // Procesar los datos y guardarlos en Firestore
+            for (const empleado of jsonData) {
+                try {
+                    // Agregar el empleado a la colección "empleados" en Firestore
+                    await addDoc(collection(firestore, 'empleados'), empleado);
+                    console.log('Empleado agregado:', empleado);
+                } catch (error) {
+                    console.error('Error al agregar empleado:', error);
+                }
+            }
+
+            alert('Importación completada.');
+        } catch (error) {
+            console.error('Error al importar desde Excel:', error);
+            alert('Error al importar desde Excel.');
+        }
+    };
+
+    // Leer el contenido del archivo como datos binarios
+    reader.readAsArrayBuffer(file);
+});*/
+

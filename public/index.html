@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Bienvenido!</title>
+    <link rel="shortcut icon" href="dk.ico" type="image/x-icon">
+    <!-- Agrega Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <!-- Reemplaza con la configuración de tu proyecto Firebase -->
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyCOy5YgehQriKz6gmqJcMbFMPeJ-5kZjHo",
+            authDomain: "asistencia-tmm.firebaseapp.com",
+            projectId: "asistencia-tmm",
+            storageBucket: "asistencia-tmm.appspot.com",
+            messagingSenderId: "154893292278",
+            appId: "1:154893292278:web:8519d0b9083a93951fd2d7",
+            measurementId: "G-SLY43346PG",
+            databaseURL: "https://asistencia-tmm-default-rtdb.firebaseio.com"
+        };
+        // Inicializa Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
+    <style>
+       body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('imagen.png');
+            background-size: cover;
+            background-position: center;
+            height: 100vh; /* Esto hace que la imagen de fondo ocupe toda la altura de la ventana del navegador */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.8); /* Color de fondo del contenedor de login */
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        #google-login-button {
+            background-color: #DB4437;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #google-login-button:hover {
+            background-color: #c1351c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>Iniciar sesión</h2>
+        <button id="google-login-button">Iniciar sesión con Google</button>
+    </div>
+
+    <!-- Agrega Firebase SDK para autenticación con Google -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script>
+        // Inicializa el proveedor de autenticación de Google
+        var provider = new firebase.auth.GoogleAuthProvider();
+
+        // Agrega un evento clic al botón de inicio de sesión con Google
+        document.getElementById('google-login-button').addEventListener('click', function() {
+            // Inicia sesión con Google
+            firebase.auth().signInWithPopup(provider).then(function(result) {
+    // El usuario inició sesión correctamente
+    var user = result.user;
+    // Verificar si el correo electrónico tiene la terminación deseada
+    if (user.email.endsWith('@truckmovers.mx')) {
+        console.log('Usuario inició sesión:', user);
+        // Redirigir al usuario a otra página
+        window.location.href = "principal.html";
+    } else {
+        // Cerrar sesión y mostrar un mensaje de error
+        firebase.auth().signOut().then(function() {
+            console.log('Usuario cerró sesión');
+            alert('Solo se permiten correos electrónicos de @truckmovers.mx');
+        }).catch(function(error) {
+            console.error('Error al cerrar sesión:', error);
+        });
+    }
+}).catch(function(error) {
+    // Ocurrió un error durante el inicio de sesión
+    var errorMessage = error.message;
+    console.error('Error de inicio de sesión:', errorMessage);
+});
+
+        });
+    </script>
+</body>
+</html>
